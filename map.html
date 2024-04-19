@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Air Quality Map</title>
+    <style>
+        #map {
+            height: calc(100vh - 40px); 
+            width: calc(100% - 40px); 
+            margin: 20px; 
+        }
+    
+        /* Media queries for different screen sizes */
+        @media only screen and (max-width: 768px) {
+            #map {
+                height: calc(100vh - 120px); 
+                width: calc(100% - 40px); 
+                margin: 20px; 
+            }
+        }
+    
+        @media only screen and (min-width: 769px) and (max-width: 1024px) {
+            #map {
+                height: calc(100vh - 180px); 
+                width: calc(100% - 40px); 
+                margin: 20px; 
+            }
+        }
+    
+        @media only screen and (min-width: 1025px) {
+            #map {
+                height: calc(100vh - 40px); 
+                width: calc(100% - 40px); 
+                margin: 20px; 
+            }
+        }
+
+        @media only screen and (min-width: 1080px) {
+            #map {
+                height: calc(100vh - 40px); 
+                width: calc(100% - 40px); 
+                margin: 20px; 
+            }
+        }
+        h1 {
+    text-align: center; 
+    margin-top: 20px; 
+}
+    </style>
+    
+</head>
+<body>
+    <h1>PM 2.5</h1>
+    <div id="map"></div>
+
+    <script>
+        function getColor(pm25) {
+            if (pm25 <= 50) {
+                return 'green'; 
+            } else if (pm25 <= 100) {
+                return 'yellow'; 
+            } else if (pm25 <= 150) {
+                return 'orange'; 
+            } else if (pm25 <= 200) {
+                return 'red'; 
+            } else {
+                return 'purple'; 
+            }
+        }
+
+        function initMap() {
+            var map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 6,
+            
+            });
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    var userLatLng = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+
+                    var userMarker = new google.maps.Marker({
+                        position: userLatLng,
+                        map: map,
+                        title: "ตำแหน่งปัจจุบันของคุณ"
+                    });
+
+                    var aqiApiUrl = 'https://api.waqi.info/feed/geo:' + userLatLng.lat + ';' + userLatLng.lng + '/?token=e145a6ec3489ea1b580a4ef2aeaa399476cbd809';
+                    
+                    fetch(aqiApiUrl)
+                        .then(function(response) {
+                            return response.json();
+                        })
+                        .then(function(data) {
+                            var aqiValue = data.data.iaqi.pm25.v; 
+                            var color = getColor(aqiValue);
+                            var infoWindowContent = "<b>ตำแหน่งปัจจุบันของคุณ</b><br>ค่า PM2.5: " + aqiValue;
+                            var infoWindow = new google.maps.InfoWindow({
+                                content: infoWindowContent,
+                                maxWidth: 200
+                            });
+
+                            userMarker.setIcon('http://maps.google.com/mapfiles/ms/icons/' + color + '-dot.png');
+                            userMarker.addListener('click', function() {
+                                infoWindow.open(map, userMarker);
+                            });
+                        })
+                        .catch(function(error) {
+                            console.error('Error fetching AQI data:', error);
+                        });
+
+                    map.setCenter(userLatLng);
+                }, function() {
+                    alert("ไม่สามารถเข้าถึงตำแหน่งปัจจุบันได้");
+                });
+            } else {
+                alert("บราวเซอร์ของคุณไม่รองรับ Geolocation");
+            }
+
+            var provinces = [
+    { name: "กรุงเทพมหานคร", lat: 13.7563, lng: 100.5018 },
+    { name: "สมุทรปราการ", lat: 13.5993, lng: 100.5968 },
+    { name: "นนทบุรี", lat: 13.8592, lng: 100.521 },
+    { name: "ปทุมธานี", lat: 14.0224, lng: 100.5125 },
+    { name: "พระนครศรีอยุธยา", lat: 14.3537, lng: 100.5528 },
+    { name: "อ่างทอง", lat: 14.5897, lng: 100.4552 },
+    { name: "ลพบุรี", lat: 14.7828, lng: 100.6131 },
+    { name: "สิงห์บุรี", lat: 14.5235, lng: 100.9108 },
+    { name: "ชัยนาท", lat: 15.1713, lng: 100.1252 },
+    { name: "สระบุรี", lat: 14.5271, lng: 100.9108 },
+    { name: "ชลบุรี", lat: 13.3611, lng: 100.9847 },
+    { name: "ระยอง", lat: 12.6819, lng: 101.2813 },
+    { name: "จันทบุรี", lat: 12.6111, lng: 102.1037 },
+    { name: "ตราด", lat: 12.2126, lng: 102.5174 },
+    { name: "ฉะเชิงเทรา", lat: 13.6596, lng: 101.2581 },
+    { name: "ปราจีนบุรี", lat: 14.0467, lng: 101.3736 },
+    { name: "นครนายก", lat: 14.2037, lng: 101.2131 },
+    { name: "สระแก้ว", lat: 13.9726, lng: 102.0896 },
+    { name: "นครราชสีมา", lat: 14.9706, lng: 102.1019 },
+    { name: "บุรีรัมย์", lat: 14.9937, lng: 103.1023 },
+    { name: "สุรินทร์", lat: 14.8801, lng: 103.4918 },
+    { name: "ศรีสะเกษ", lat: 15.1164, lng: 104.3294 },
+    { name: "อุบลราชธานี", lat: 15.228, lng: 104.8563 },
+    { name: "ยโสธร", lat: 15.7941, lng: 104.1455 },
+    { name: "ชัยภูมิ", lat: 15.8395, lng: 102.0296 },
+    { name: "อำนาจเจริญ", lat: 16.1246, lng: 104.4259 },
+    { name: "บึงกาฬ", lat: 18.3614, lng: 103.6505 },
+    { name: "หนองบัวลำภู", lat: 17.2266, lng: 102.4264 },
+    { name: "ขอนแก่น", lat: 16.4319, lng: 102.8233 },
+    { name: "อุดรธานี", lat: 17.3875, lng: 102.797 },
+    { name: "เลย", lat: 17.4873, lng: 101.7221 },
+    { name: "หนองคาย", lat: 17.8784, lng: 102.7417 },
+    { name: "มหาสารคาม", lat: 16.1516, lng: 103.2966 },
+    { name: "ร้อยเอ็ด", lat: 16.0588, lng: 103.6479 },
+    { name: "กาฬสินธุ์", lat: 16.4354, lng: 103.5064 },
+    { name: "สกลนคร", lat: 17.1727, lng: 103.5462 },
+    { name: "นครพนม", lat: 17.3606, lng: 104.7776 },
+    { name: "มุกดาหาร", lat: 16.543, lng: 104.1284 },
+    { name: "เชียงใหม่", lat: 18.7877, lng: 98.9931 },
+    { name: "ลำพูน", lat: 18.5743, lng: 99.0087 },
+    { name: "ลำปาง", lat: 18.2833, lng: 99.5128 },
+    { name: "อุตรดิตถ์", lat: 17.6282, lng: 100.0998 },
+    { name: "แพร่", lat: 18.1456, lng: 100.1327 },
+    { name: "น่าน", lat: 18.7883, lng: 100.6903 },
+    { name: "พะเยา", lat: 19.1933, lng: 99.8829 },
+    { name: "เชียงราย", lat: 19.9105, lng: 99.8405 },
+    { name: "แม่ฮ่องสอน", lat: 19.302, lng: 99.2204 },
+    { name: "นครสวรรค์", lat: 15.6913, lng: 100.119 },
+    { name: "อุทัยธานี", lat: 15.3782, lng: 100.0245 },
+    { name: "กำแพงเพชร", lat: 16.4823, lng: 99.5228 },
+    { name: "ตาก", lat: 16.8839, lng: 99.1256 },
+    { name: "สุโขทัย", lat: 17.0055, lng: 99.8262 },
+    { name: "พิษณุโลก", lat: 16.8248, lng: 100.2565 },
+    { name: "พิจิตร", lat: 16.2072, lng: 100.5347 },
+    { name: "เพชรบูรณ์", lat: 16.4204, lng: 101.1596 },
+    { name: "ราชบุรี", lat: 13.5283, lng: 99.8134 },
+    { name: "กาญจนบุรี", lat: 14.0224, lng: 99.532 },
+    { name: "สุพรรณบุรี", lat: 14.4745, lng: 100.1177 },
+    { name: "นครปฐม", lat: 13.8196, lng: 100.0443 },
+    { name: "สมุทรสาคร", lat: 13.542, lng: 100.2744 },
+    { name: "สมุทรสงคราม", lat: 13.4127, lng: 100.0023 },
+    { name: "เพชรบุรี", lat: 13.1013, lng: 99.954 },
+    { name: "ประจวบคีรีขันธ์", lat: 11.8091, lng: 99.7975 },
+    { name: "นครศรีธรรมราช", lat: 8.4301, lng: 99.9637 },
+    { name: "กระบี่", lat: 8.1126, lng: 98.7623 },
+    { name: "พังงา", lat: 8.4501, lng: 98.5305 },
+    { name: "ภูเก็ต", lat: 7.8804, lng: 98.3923 },
+    { name: "สุราษฎร์ธานี", lat: 9.1386, lng: 99.3217 },
+    { name: "ระนอง", lat: 9.6683, lng: 99.9933 },
+    { name: "ชุมพร", lat: 10.4846, lng: 99.191 },
+    { name: "สงขลา", lat: 7.1756, lng: 100.614 },
+    { name: "สตูล", lat: 6.6463, lng: 100.4172 },
+    { name: "ตรัง", lat: 7.6157, lng: 99.614 },
+    { name: "พัทลุง", lat: 7.6165, lng: 100.0807 },
+    { name: "ปัตตานี", lat: 6.9856, lng: 101.0396 },
+    { name: "ยะลา", lat: 6.5394, lng: 101.2813 },
+    { name: "นราธิวาส", lat: 6.425 , lng: 101.8253 },
+    { name: "สหรัฐอเมริกา", lat: 51.5074, lng: -0.1278 }, 
+    { name: "ญี่ปุ่น", lat: 35.6895, lng: 139.6917 }, 
+    { name: "จีน", lat: 39.9042, lng: 116.4074 }, 
+    { name: "ลาว", lat: 19.8563, lng: 102.4955 }, 
+    { name: "พม่า ", lat: 21.9162, lng: 95.9560 }, 
+    { name: "เวียดนาม ", lat: 14.0583, lng: 108.2772 }, 
+    { name: "สิงค์โปร", lat: 1.3521, lng: 103.8198 }, 
+    { name: "กัมพูชา ", lat: 12.5657, lng: 104.9910 }, 
+    { name: "ฟิลิปปินส์",  lat: 12.8797, lng: 121.7740 }, 
+];
+
+            var currentInfoWindow = null; // เก็บ info window ที่เปิดอยู่
+
+            provinces.forEach(function(province) {
+                var marker = new google.maps.Marker({
+                    position: { lat: province.lat, lng: province.lng },
+                    map: map,
+                    title: province.name
+                });
+
+                var aqiApiUrl = 'https://api.waqi.info/feed/geo:' + province.lat + ';' + province.lng + '/?token=e145a6ec3489ea1b580a4ef2aeaa399476cbd809';
+                
+                fetch(aqiApiUrl)
+                    .then(function(response) {
+                        return response.json();
+                    })
+                    .then(function(data) {
+                        var aqiValue = data.data.iaqi.pm25.v; // รับค่า PM2.5 จากข้อมูล API
+                        var color = getColor(aqiValue);
+                        var infoWindowContent = province.name + '<br>ค่า PM2.5: ' + aqiValue;
+                        var infoWindow = new google.maps.InfoWindow({
+                            content: infoWindowContent,
+                            maxWidth: 200
+                        });
+
+                        marker.setIcon('http://maps.google.com/mapfiles/ms/icons/' + color + '-dot.png');
+                        marker.addListener('click', function() {
+                         
+                            if (currentInfoWindow) {
+                                currentInfoWindow.close();
+                            }
+                         
+                            infoWindow.open(map, marker);
+                          
+                            currentInfoWindow = infoWindow;
+                        });
+                    })
+                    .catch(function(error) {
+                        console.error('Error fetching AQI data:', error);
+                    });
+            });
+        }
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD7FQhI4H6O9n-pm2hOO8a7fEsYnAof5iY&callback=initMap" async defer></script>
+</body>
+</html>
